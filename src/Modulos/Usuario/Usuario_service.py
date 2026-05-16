@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy import update
 from passlib.context import CryptContext
 from .Usuario_modelo import Usuario
-from .Usuario_schema import UsuarioCreate, UsuarioUpdate, UsuarioRead
+from .Usuario_schema import UsuarioCreate, UsuarioUpdate, UsuarioRead, UsuarioLogin
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -37,3 +38,31 @@ class UsuarioService:
         query = select(Usuario)
         result = await self.db.execute(query)
         return result.scalars().all()
+    
+    async def login_usuario(self, datos: UsuarioLogin):
+        query = select(Usuario).where(datos.correo == Usuario.correo)
+        result = await self.db.execute(query)
+        usuario = result.scalar_one_or_none()
+        if usuario and pwd_context.verify(datos.password, usuario.password):
+            return usuario
+        return None
+
+    async def borrar_usuario(self, usuario_id:int):
+        usuario = await self.obtener_usuario_por_id(usuario_id)
+        if usuario:
+            await self.db.delete(usuario)
+            await self.db.commit()
+            return True
+        return False
+
+    async def actualizar_usuario(self, data:UsuarioUpdate,usuario_id:int):
+        usuario = await self.obtener_usuario_por_id(usuario_id)
+        if not usuario:
+            return None
+        if data.correo is not None:
+            await self.db.execute(update(Usuario).where(Usuario.id == usuario_id).values(correo = data.correo))
+        if data.password is not None:
+            password_hash = self.generar_hash(data.password)
+            await self.db.execute(update(Usuario).where(Usuario.id == usuario_id).values(password = password_hash))
+        
+    

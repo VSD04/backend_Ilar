@@ -26,3 +26,8 @@ class UsuarioRead(UsuarioBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+#Login: para autenticar, solo tiene correo y contraseña
+class UsuarioLogin(BaseModel):
+    correo: EmailStr = Field(...,example="usuario@example.com")
+    password: str = Field(..., min_length=8, example="Contraseña123!")
