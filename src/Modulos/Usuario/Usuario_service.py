@@ -39,11 +39,11 @@ class UsuarioService:
         result = await self.db.execute(query)
         return result.scalars().all()
     
-    async def login_usuario(self, datos: UsuarioLogin):
-        query = select(Usuario).where(datos.correo == Usuario.correo)
+    async def login_usuario(self, username:str, password:str):
+        query = select(Usuario).where(username == Usuario.correo)
         result = await self.db.execute(query)
         usuario = result.scalar_one_or_none()
-        if usuario and pwd_context.verify(datos.password, usuario.password):
+        if usuario and pwd_context.verify(password, usuario.password):
             return usuario
         return None
 
@@ -64,5 +64,12 @@ class UsuarioService:
         if data.password is not None:
             password_hash = self.generar_hash(data.password)
             await self.db.execute(update(Usuario).where(Usuario.id == usuario_id).values(password = password_hash))
+        if data.rol is not None:
+            await self.db.execute(update(Usuario).where(Usuario.id == usuario_id).values(rol = data.rol))
+        if data.nombre is not None:
+            await self.db.execute(update(Usuario).where(Usuario.id == usuario_id).values(nombre = data.nombre))
+        await self.db.commit()
+        return await self.obtener_usuario_por_id(usuario_id)
+    
         
     
